@@ -46,17 +46,10 @@ class StreamChannelBroker {
     async _subscribe(groupName, consumerName, handler, pollSpan = 1000, payloadsToFetch = 2, subscriptionHandle = _nonSecureId(), readPending = false) {
         const intervalHandle = setTimeout(async () => {
             try {
-                console.log('scanning for new messages');
-                console.log(`GROUP ${groupName} ${consumerName} BLOCK ${pollSpan} COUNT ${payloadsToFetch} STREAMS ${this._channelName} ${(readPending === false ? ">" : "0")}`)
                 const messages = await this._redisClient.xreadgroup("GROUP", groupName, consumerName, "BLOCK", pollSpan, "COUNT", payloadsToFetch, "STREAMS", this._channelName, (readPending === false ? ">" : "0"));
-                console.log('messages result ' + messages);
 
                 if (messages !== null) {
                     let streamPayloads = this._transformResponseToMessage(messages, groupName);
-                    if (streamPayloads.length === 0 & readPending === true) {// The server should respond back with zero and not with null response. //Look at usage example https://redis.io/commands/xreadgroup
-                        //This means all pending messages are processed for this consumer name.
-                        readPending = false;
-                    }
                     let nextPayloadToFetch = await handler(streamPayloads);
                     if (nextPayloadToFetch != null && !Number.isNaN(nextPayloadToFetch) && nextPayloadToFetch != "") {
                         payloadsToFetch = Number.parseInt(nextPayloadToFetch);
@@ -65,13 +58,9 @@ class StreamChannelBroker {
                 }
             }
             finally {
-                console.log('inside finally');
                 if (this._destroying === false && this._unsubscribe(subscriptionHandle)) {
-                    console.log('inside finally 1');
                     if (payloadsToFetch > 0) {
-                        console.log('inside finally 2');
                         await this._subscribe(groupName, consumerName, handler, pollSpan, payloadsToFetch, subscriptionHandle, readPending);
-                        console.log('inside finally 3');
 
                     }
                 }
