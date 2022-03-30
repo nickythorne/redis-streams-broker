@@ -47,6 +47,7 @@ class StreamChannelBroker {
         const intervalHandle = setTimeout(async () => {
             try {
                 console.log('scanning for new messages');
+                console.log(`GROUP ${groupName} ${consumerName} BLOCK ${pollSpan} COUNT ${payloadsToFetch} STREAMS ${this._channelName} ${(readPending === false ? ">" : "0")}`)
                 const messages = await this._redisClient.xreadgroup("GROUP", groupName, consumerName, "BLOCK", pollSpan, "COUNT", payloadsToFetch, "STREAMS", this._channelName, (readPending === false ? ">" : "0"));
                 console.log('messages result ' + messages);
 
